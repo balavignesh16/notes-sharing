@@ -1,0 +1,19 @@
+# Node.js
+node_modules/
+.env
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+
+# Firebase
+.firebase/
+firebase-debug.log
+
+# SQLite
+*.db # Be careful with this if your DB is dynamic, otherwise it's good to ignore
