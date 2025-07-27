@@ -1,31 +1,47 @@
 // frontend/src/App.js
 import React, { useState, useEffect } from 'react';
-import { auth } from './firebaseConfig'; // Import Firebase auth instance
-import { onAuthStateChanged } from 'firebase/auth'; // Firebase function to listen for auth state changes
-import Auth from './components/Auth'; // CORRECTED: Use './components/Auth'
-import UserProfile from './components/UserProfile'; // CORRECTED: Use './components/UserProfile'
-import 'bootstrap/dist/css/bootstrap.min.css'; // Import Bootstrap CSS for responsive UI
+import { auth } from './firebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth';
+import Auth from './components/Auth';
+import UserProfile from './components/UserProfile';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
-    const [user, setUser] = useState(null); // State to hold the currently logged-in Firebase user
-    const [loading, setLoading] = useState(true); // State to manage initial loading of authentication status
+    const [user, setUser] = useState(null); // Firebase user object
+    const [profileName, setProfileName] = useState('Guest'); // State to hold the user's name for the navbar
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Subscribe to Firebase authentication state changes
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-            setUser(currentUser); // Update user state with the current user (or null if logged out)
-            setLoading(false); // Set loading to false once auth state is determined
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            setUser(currentUser);
+            if (currentUser) {
+                // If a user is logged in, fetch their name from the backend
+                try {
+                    const response = await fetch(`http://localhost:5000/api/profile/${currentUser.uid}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        setProfileName(data.name || 'User'); // Set the name, default to 'User' if not found
+                    } else {
+                        console.error('Failed to fetch profile name:', response.statusText);
+                        setProfileName(currentUser.email); // Fallback to email if name fetch fails
+                    }
+                } catch (error) {
+                    console.error('Error fetching profile name:', error);
+                    setProfileName(currentUser.email); // Fallback to email on error
+                }
+            } else {
+                setProfileName('Guest'); // Reset to Guest if logged out
+            }
+            setLoading(false);
         });
-        return () => unsubscribe(); // Cleanup the subscription when the component unmounts
+        return () => unsubscribe();
     }, []);
 
-    // Callback function to handle successful authentication (login or registration)
     const handleAuthSuccess = (loggedInUser) => {
-        setUser(loggedInUser); // Update the user state
+        setUser(loggedInUser);
     };
 
     if (loading) {
-        // Display a loading message while checking authentication status
         return (
             <div className="d-flex justify-content-center align-items-center vh-100">
                 <div className="spinner-border text-primary" role="status">
@@ -38,9 +54,8 @@ function App() {
 
     return (
         <div className="App">
-            {user ? ( // Conditionally render based on whether a user is logged in
+            {user ? (
                 <>
-                    {/* Navigation Bar for logged-in users */}
                     <nav className="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
                         <div className="container-fluid">
                             <a className="navbar-brand" href="/">Interactive Lecture Notes</a>
@@ -50,10 +65,10 @@ function App() {
                             <div className="collapse navbar-collapse" id="navbarNav">
                                 <ul className="navbar-nav ms-auto">
                                     <li className="nav-item">
-                                        <span className="navbar-text me-3">Welcome, {user.email}</span>
+                                        {/* MODIFIED: Display profileName */}
+                                        <span className="navbar-text me-3">Welcome, {profileName}</span>
                                     </li>
                                     <li className="nav-item">
-                                        {/* Logout button */}
                                         <button className="btn btn-outline-danger" onClick={() => auth.signOut()}>
                                             Logout
                                         </button>
@@ -62,14 +77,11 @@ function App() {
                             </div>
                         </div>
                     </nav>
-                    {/* Main content area for authenticated users */}
                     <div className="container mt-4">
-                        <UserProfile user={user} /> {/* Pass the authenticated user to UserProfile component */}
-                        {/* Other authenticated components (e.g., note upload, search) will go here in future sprints */}
+                        <UserProfile user={user} />
                     </div>
                 </>
             ) : (
-                // Render the Auth component if no user is logged in
                 <Auth onAuthSuccess={handleAuthSuccess} />
             )}
         </div>

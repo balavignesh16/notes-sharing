@@ -1,37 +1,36 @@
 // frontend/src/components/UserProfile.js
 import React, { useState, useEffect } from 'react';
 
-const UserProfile = ({ user }) => { // Receives the Firebase user object as prop [cite: 128]
-    const [profileData, setProfileData] = useState(null); // State to store fetched profile data
-    const [loading, setLoading] = useState(true); // State to manage loading status
-    const [error, setError] = useState(null); // State for error messages
+const UserProfile = ({ user }) => {
+    const [profileData, setProfileData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         const fetchProfile = async () => {
-            if (!user || !user.uid) { // Ensure user object and UID are available
+            if (!user || !user.uid) {
                 setError("User not logged in or UID not available.");
                 setLoading(false);
                 return;
             }
             try {
-                // Fetch user profile data from your backend API [cite: 129]
                 const response = await fetch(`http://localhost:5000/api/profile/${user.uid}`);
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.message || 'Failed to fetch profile from backend.');
                 }
                 const data = await response.json();
-                setProfileData(data); // Set the fetched data to state
+                setProfileData(data);
             } catch (err) {
-                setError(err.message); // Set error message
+                setError(err.message);
                 console.error("Error fetching profile:", err);
             } finally {
-                setLoading(false); // Set loading to false regardless of success or error
+                setLoading(false);
             }
         };
 
-        fetchProfile(); // Call the fetch function when component mounts or user changes
-    }, [user]); // Dependency array: re-run effect if 'user' object changes
+        fetchProfile();
+    }, [user]);
 
     if (loading) {
         return <div className="text-center mt-5">Loading profile...</div>;
@@ -45,7 +44,6 @@ const UserProfile = ({ user }) => { // Receives the Firebase user object as prop
         return <div className="text-center mt-5">No profile data available. Please complete registration.</div>;
     }
 
-    // Render the user's profile details [cite: 123]
     return (
         <div className="container mt-5">
             <div className="card shadow-sm">
@@ -69,10 +67,16 @@ const UserProfile = ({ user }) => { // Receives the Firebase user object as prop
                         <div className="col-md-6"><strong>Registration Number:</strong></div>
                         <div className="col-md-6">{profileData.registrationNumber || 'N/A'}</div>
                     </div>
+                    {/* --- MODIFIED: Display Degree and Programme --- */}
                     <div className="row mb-2">
-                        <div className="col-md-6"><strong>Course:</strong></div>
-                        <div className="col-md-6">{profileData.course || 'N/A'}</div>
+                        <div className="col-md-6"><strong>Degree:</strong></div>
+                        <div className="col-md-6">{profileData.degree || 'N/A'}</div>
                     </div>
+                    <div className="row mb-2">
+                        <div className="col-md-6"><strong>Programme:</strong></div>
+                        <div className="col-md-6">{profileData.programme || 'N/A'}</div>
+                    </div>
+                    {/* --- END MODIFIED --- */}
                     <div className="row mb-2">
                         <div className="col-md-6"><strong>College Email ID:</strong></div>
                         <div className="col-md-6">{profileData.collegeEmail || 'N/A'}</div>
@@ -81,12 +85,11 @@ const UserProfile = ({ user }) => { // Receives the Firebase user object as prop
                         <div className="col-md-6"><strong>Current Academic Year:</strong></div>
                         <div className="col-md-6">
                             {profileData.currentAcademicYear}
-                            <sup>{ // Add ordinal suffix (st, nd, rd, th)
+                            <sup>{
                                 profileData.currentAcademicYear === 1 ? 'st' :
                                 profileData.currentAcademicYear === 2 ? 'nd' :
                                 profileData.currentAcademicYear === 3 ? 'rd' : 'th'
                             }</sup> year
-                            {/* Verify academic year calculation in testing  */}
                         </div>
                     </div>
                 </div>

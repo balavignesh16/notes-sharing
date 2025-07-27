@@ -1,59 +1,125 @@
 // frontend/src/components/Auth.js
-import React, { useState } from 'react';
-import { auth } from '../firebaseConfig'; // Import Firebase auth instance [cite: 121]
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'; // Firebase authentication functions [cite: 121]
+import React, { useState, useEffect } from 'react';
+import { auth } from '../firebaseConfig';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+
+// Define the college courses structure
+const collegeCourses = [
+    { degree: "B.Tech", programmes: [
+        "Civil Engineering",
+        "Computer Science and Engineering",
+        "Computer Science and Engineering (Artificial Intelligence and Machine Learning)",
+        "Computer Science and Engineering (Artificial Intelligence and Robotics)",
+        "Computer Science and Engineering (Cyber Physical Systems)",
+        "Computer Science and Engineering (Cyber Security)",
+        "Computer Science and Engineering (Data Science)",
+        "Electrical and Computer Science Engineering",
+        "Electrical and Electronics Engineering",
+        "Electronics and Communication Engineering",
+        "Electronics and Computer Engineering",
+        "Electronics Engineering (VLSI Design and Technology)",
+        "Fashion Technology",
+        "Mechanical Engineering",
+        "Mechanical Engineering with Specialization in Electric Vehicles",
+        "Mechatronics and Automation"
+    ]},
+    { degree: "B.A.,LLB.(Hons)", programmes: ["B.A., LL.B (Hons.)"] },
+    { degree: "B.B.A.,LLB (Hons.)", programmes: ["B.B.A., LL.B (Hons.)"] },
+    { degree: "BBA (Hons.)", programmes: ["B.B.A (Hons.)"] },
+    { degree: "B.Com (Hons.)", programmes: ["B.Com. (Hons.)"] },
+    { degree: "B.Sc", programmes: ["Fashion Design", "Computer Science", "Economics (Hons.)"] },
+    { degree: "Integrated M.Sc.", programmes: ["Applied Psychology"] },
+    { degree: "Integrated M.Tech.", programmes: ["Computer Science and Engineering (Business Analytics)", "Computer Science and Engineering (Software Engineering)"] },
+    { degree: "M.Tech.", programmes: [
+        "CAD/CAM",
+        "Computer Science and Engineering",
+        "Computer Science and Engineering (Artificial Intelligence & Machine Learning)",
+        "Computer Science and Engineering (Big data Analytics)",
+        "Electric Mobility",
+        "Embedded Systems",
+        "Mechatronics",
+        "Structural Engineering",
+        "VLSI Design"
+    ]},
+    { degree: "M.B.A", programmes: ["Master of Business Administration"] },
+    { degree: "M.C.A", programmes: ["Master of Computer Applications"] },
+    { degree: "M.Sc.", programmes: ["Chemistry", "Data Science", "Physics"] },
+    { degree: "LL.M.", programmes: ["Corporate Law", "Intellectual Property Law", "International Law & Development"] },
+    { degree: "Ph.D", programmes: ["Research"] }
+];
 
 const Auth = ({ onAuthSuccess }) => {
-    const [isRegistering, setIsRegistering] = useState(true); // State to toggle between register and login forms
+    const [isRegistering, setIsRegistering] = useState(true);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [joiningYear, setJoiningYear] = useState(''); // [cite: 122]
-    const [regNumber, setRegNumber] = useState(''); // [cite: 122]
-    const [course, setCourse] = useState(''); // [cite: 122]
-    const [collegeEmail, setCollegeEmail] = useState(''); // [cite: 122]
-    const [error, setError] = useState(null); // State for displaying error messages
+    const [joiningYear, setJoiningYear] = useState('');
+    const [regNumber, setRegNumber] = useState('');
+    // --- MODIFIED: State for Degree and Programme ---
+    const [selectedDegree, setSelectedDegree] = useState('');
+    const [selectedProgramme, setSelectedProgramme] = useState('');
+    const [programmesForDegree, setProgrammesForDegree] = useState([]);
+
+    const [collegeEmail, setCollegeEmail] = useState('');
+    const [error, setError] = useState(null);
+
+    // Effect to update programmes when selectedDegree changes
+    useEffect(() => {
+        const foundDegree = collegeCourses.find(course => course.degree === selectedDegree);
+        if (foundDegree) {
+            setProgrammesForDegree(foundDegree.programmes);
+            // Reset selectedProgramme if the current one is not valid for the new degree
+            if (!foundDegree.programmes.includes(selectedProgramme)) {
+                setSelectedProgramme('');
+            }
+        } else {
+            setProgrammesForDegree([]);
+            setSelectedProgramme('');
+        }
+    }, [selectedDegree]);
+
 
     const handleSubmit = async (e) => {
-        e.preventDefault(); // Prevent default form submission behavior
-        setError(null); // Clear previous errors
+        e.preventDefault();
+        setError(null);
 
         try {
             let userCredential;
             if (isRegistering) {
-                // Attempt to create a user with Email and Password using Firebase
-                userCredential = await createUserWithEmailAndPassword(auth, email, password); // [cite: 121]
-                // If Firebase registration is successful, send additional user data to your backend
-                await sendUserDataToBackend(userCredential.user.uid); // [cite: 122]
+                // Basic validation for degree and programme
+                if (!selectedDegree || !selectedProgramme) {
+                    setError("Please select both Degree and Programme.");
+                    return;
+                }
+
+                userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                await sendUserDataToBackend(userCredential.user.uid);
             } else {
-                // Attempt to sign in a user with Email and Password using Firebase
-                userCredential = await signInWithEmailAndPassword(auth, email, password); // [cite: 121]
+                userCredential = await signInWithEmailAndPassword(auth, email, password);
             }
-            // Call the success callback function with the authenticated user object
             onAuthSuccess(userCredential.user);
         } catch (err) {
-            // Catch and display any errors during authentication
             setError(err.message);
-            console.error("Authentication error:", err);
+            console.error("Auth error:", err);
         }
     };
 
-    // Function to send user's profile data to your Node.js backend
     const sendUserDataToBackend = async (firebaseUid) => {
         try {
-            const response = await fetch('http://localhost:5000/api/register', { // [cite: 124]
+            const response = await fetch('http://localhost:5000/api/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    id: firebaseUid, // Firebase UID will be the primary key in your SQLite DB [cite: 101]
+                    id: firebaseUid,
                     name,
                     email,
-                    joiningYear: parseInt(joiningYear), // Convert to number [cite: 122]
-                    regNumber, // [cite: 122]
-                    course, // [cite: 122]
-                    collegeEmail, // [cite: 122]
+                    joiningYear: parseInt(joiningYear),
+                    regNumber,
+                    degree: selectedDegree,     // Sending selected degree
+                    programme: selectedProgramme, // Sending selected programme
+                    collegeEmail,
                 }),
             });
             if (!response.ok) {
@@ -63,10 +129,7 @@ const Auth = ({ onAuthSuccess }) => {
             console.log("User data sent to backend successfully!");
         } catch (err) {
             console.error("Error sending user data to backend:", err);
-            // Set an error for the user to see, and potentially offer a retry or explain
-            setError("Backend registration failed: " + err.message + ". Please try again or contact support.");
-            // In a production app, you might consider rolling back the Firebase account creation here
-            // if the backend registration fails, to keep data consistent.
+            setError("Backend registration failed: " + err.message);
         }
     };
 
@@ -81,7 +144,7 @@ const Auth = ({ onAuthSuccess }) => {
                         <div className="card-body">
                             {error && <div className="alert alert-danger">{error}</div>}
                             <form onSubmit={handleSubmit}>
-                                {isRegistering && ( // Render extra fields only for registration [cite: 122]
+                                {isRegistering && (
                                     <>
                                         <div className="mb-3">
                                             <label htmlFor="name" className="form-label">Name</label>
@@ -102,8 +165,8 @@ const Auth = ({ onAuthSuccess }) => {
                                                 id="joiningYear"
                                                 value={joiningYear}
                                                 onChange={(e) => setJoiningYear(e.target.value)}
-                                                min="2000" // Sensible minimum year
-                                                max="2025" // Current year [cite: 71]
+                                                min="2000"
+                                                max="2025"
                                                 required
                                             />
                                         </div>
@@ -117,16 +180,40 @@ const Auth = ({ onAuthSuccess }) => {
                                                 onChange={(e) => setRegNumber(e.target.value)}
                                             />
                                         </div>
+                                        {/* --- MODIFIED: Degree Dropdown --- */}
                                         <div className="mb-3">
-                                            <label htmlFor="course" className="form-label">Course (e.g., Computer Science)</label>
-                                            <input
-                                                type="text"
-                                                className="form-control"
-                                                id="course"
-                                                value={course}
-                                                onChange={(e) => setCourse(e.target.value)}
-                                            />
+                                            <label htmlFor="degree" className="form-label">Degree</label>
+                                            <select
+                                                className="form-select"
+                                                id="degree"
+                                                value={selectedDegree}
+                                                onChange={(e) => setSelectedDegree(e.target.value)}
+                                                required
+                                            >
+                                                <option value="">Select Degree</option>
+                                                {collegeCourses.map((course, index) => (
+                                                    <option key={index} value={course.degree}>{course.degree}</option>
+                                                ))}
+                                            </select>
                                         </div>
+                                        {/* --- MODIFIED: Programme Dropdown (dependent on Degree) --- */}
+                                        <div className="mb-3">
+                                            <label htmlFor="programme" className="form-label">Programme</label>
+                                            <select
+                                                className="form-select"
+                                                id="programme"
+                                                value={selectedProgramme}
+                                                onChange={(e) => setSelectedProgramme(e.target.value)}
+                                                disabled={!selectedDegree} // Disable if no degree is selected
+                                                required
+                                            >
+                                                <option value="">Select Programme</option>
+                                                {programmesForDegree.map((programme, index) => (
+                                                    <option key={index} value={programme}>{programme}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        {/* --- END MODIFIED --- */}
                                         <div className="mb-3">
                                             <label htmlFor="collegeEmail" className="form-label">College Email ID</label>
                                             <input
