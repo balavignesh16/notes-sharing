@@ -12,6 +12,9 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^5.1.0",
-    "sqlite3": "^5.1.7"
+    "multer": "^2.0.2",
+    "natural": "^8.1.0",
+    "sqlite3": "^5.1.7",
+    "tesseract.js": "^6.0.1"
   }
 }
