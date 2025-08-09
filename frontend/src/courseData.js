@@ -1,4 +1,3 @@
-// frontend/src/courseData.js
 const allCourses = [
     { "courseCode": "BCHY101L", "courseTitle": "Engineering Chemistry" },
     { "courseCode": "BCHY101P", "courseTitle": "Engineering Chemistry Lab" },
