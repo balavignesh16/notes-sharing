@@ -1,8 +1,7 @@
-// ====================================================================================
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
-import useAuth from './hooks/useAuth';
+import { useAuth } from './context/AuthContext';
 import Header from './components/Layout/Header';
 import HomePage from './components/Home/HomePage';
 import Login from './components/Auth/Login';
@@ -10,7 +9,8 @@ import SignUp from './components/Auth/SignUp';
 import Dashboard from './components/Dashboard/Dashboard';
 import UserProfile from './components/Profile/UserProfile';
 import NoteUpload from './components/Notes/NoteUpload';
-import NoteView from './components/Notes/NoteView'; // <-- IMPORT NEW COMPONENT
+import NoteView from './components/Notes/NoteView';
+import CourseView from './components/Courses/CourseView'; // <-- IMPORT NEW COMPONENT
 import FullPageSpinner from './components/Layout/FullPageSpinner';
 
 function ProtectedRoute({ user, children }) {
@@ -49,10 +49,14 @@ function App() {
               path="/upload" 
               element={<ProtectedRoute user={user}><NoteUpload /></ProtectedRoute>} 
             />
-            {/* V-- ADD NEW ROUTE FOR VIEWING A NOTE --V */}
             <Route 
               path="/note/:noteId" 
               element={<ProtectedRoute user={user}><NoteView /></ProtectedRoute>} 
+            />
+            {/* V-- ADD NEW ROUTE FOR VIEWING A COURSE --V */}
+            <Route 
+              path="/course/:courseName" 
+              element={<ProtectedRoute user={user}><CourseView /></ProtectedRoute>} 
             />
 
             <Route path="*" element={<Navigate to="/" />} />
